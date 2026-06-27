@@ -72,7 +72,13 @@ export async function POST(req: NextRequest) {
     .select("id, bank_name, bank_account, amount, expires_at")
     .single()
 
-  if (error) return NextResponse.json({ message: "Gagal membuat order" }, { status: 500 })
+  if (error) {
+    console.error("checkout insert error:", error)
+    return NextResponse.json(
+      { message: "Gagal membuat order", detail: error.message, code: error.code },
+      { status: 500 }
+    )
+  }
 
   return NextResponse.json(order)
 }
