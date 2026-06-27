@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { z } from "zod"
 import { generateTaskFeedback } from "@/lib/gemini"
-import { decrypt } from "@/lib/crypto"
+import { getUserGeminiKey } from "@/lib/ai-key"
 
 const schema = z.object({
   task_id: z.string().uuid(),
@@ -41,18 +40,9 @@ export async function POST(req: NextRequest) {
   let aiScore: number | null = null
   let aiError: string | null = null
 
-  const { data: keyRow } = await createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-    .from("users")
-    .select("gemini_api_key_encrypted")
-    .eq("id", user.id)
-    .single()
-
-  if (keyRow?.gemini_api_key_encrypted) {
+  const apiKey = await getUserGeminiKey(user.id)
+  if (apiKey) {
     try {
-      const apiKey = decrypt(keyRow.gemini_api_key_encrypted)
       const result = await generateTaskFeedback({
         apiKey,
         taskTitle: task.title,

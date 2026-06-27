@@ -5,7 +5,11 @@ import ReEngagementBanner from "@/components/dashboard/ReEngagementBanner"
 import ProgressCard from "@/components/dashboard/ProgressCard"
 import StreakCard from "@/components/dashboard/StreakCard"
 import DailyLogWidget from "@/components/dashboard/DailyLogWidget"
+import ReportCard from "@/components/dashboard/ReportCard"
+import AIRecommendation from "@/components/dashboard/AIRecommendation"
 import ModuleCard from "@/components/modules/ModuleCard"
+import Link from "next/link"
+import { Award } from "lucide-react"
 import { differenceInDays } from "date-fns"
 
 export default async function DashboardPage() {
@@ -38,6 +42,32 @@ export default async function DashboardPage() {
       .order("started_at", { ascending: false })
       .limit(4),
   ])
+
+  // Learning report: best score per module → average, strongest, weakest
+  const [{ data: submissionRows }, { data: allModules }] = await Promise.all([
+    supabase
+      .from("task_submissions")
+      .select("module_id, score")
+      .eq("user_id", user.id)
+      .not("score", "is", null),
+    supabase.from("modules").select("id, title"),
+  ])
+
+  const titleById = new Map((allModules ?? []).map((m) => [m.id, m.title]))
+  const bestByModule = new Map<string, { score: number; title: string }>()
+  for (const s of submissionRows ?? []) {
+    if (s.score === null) continue
+    const title = titleById.get(s.module_id) ?? ""
+    const prev = bestByModule.get(s.module_id)
+    if (!prev || s.score > prev.score) bestByModule.set(s.module_id, { score: s.score, title })
+  }
+  const graded = [...bestByModule.values()]
+  const avgScore = graded.length
+    ? Math.round(graded.reduce((a, b) => a + b.score, 0) / graded.length)
+    : null
+  const sorted = [...graded].sort((a, b) => b.score - a.score)
+  const strongest = sorted[0] ?? null
+  const weakest = sorted[sorted.length - 1] ?? null
 
   if (profile && !profile.onboarding_completed) {
     redirect("/welcome")
@@ -72,10 +102,35 @@ export default async function DashboardPage() {
         </p>
       </div>
 
+      {completed >= 19 && (
+        <Link
+          href="/certificate"
+          className="flex items-center gap-3 bg-gradient-to-r from-brand-500 to-brand-600 text-white rounded-xl p-4 hover:from-brand-600 hover:to-brand-700 transition-all"
+        >
+          <Award size={24} className="flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-semibold text-sm">Kamu menyelesaikan semua 19 modul! 🎉</p>
+            <p className="text-xs text-brand-50">Klik untuk melihat & mengunduh sertifikatmu</p>
+          </div>
+        </Link>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <ProgressCard completed={completed} total={19} percentage={percentage} />
         <StreakCard streakCount={profile?.streak_count ?? 0} hasLogToday={!!todayLog} />
       </div>
+
+      {graded.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <ReportCard
+            avgScore={avgScore}
+            gradedCount={graded.length}
+            strongest={strongest}
+            weakest={weakest}
+          />
+          <AIRecommendation />
+        </div>
+      )}
 
       {lastModule && (
         <div>

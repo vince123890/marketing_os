@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
-import { ChevronLeft, Bookmark, BookmarkCheck, CheckCircle, Loader2 } from "lucide-react"
+import { ChevronLeft, Bookmark, BookmarkCheck, CheckCircle, Loader2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn, truncate } from "@/lib/utils"
@@ -58,9 +58,51 @@ export default function ModuleDetailClient({
   const [isCompleted, setIsCompleted] = useState(initialIsCompleted)
   const [isBookmarked, setIsBookmarked] = useState(initialBookmarked)
   const [localSubmissions, setLocalSubmissions] = useState<Submission[]>(submissions)
+  const [revising, setRevising] = useState(false)
+  const [revisionTip, setRevisionTip] = useState<string | null>(null)
+  const [summarizing, setSummarizing] = useState(false)
+  const [summary, setSummary] = useState<string | null>(null)
+
+  async function handleSummarize() {
+    setSummarizing(true)
+    try {
+      const res = await fetch("/api/modules/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ module_id: module.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message)
+      setSummary(data.summary)
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Gagal merangkum")
+    } finally {
+      setSummarizing(false)
+    }
+  }
 
   const charCount = answer.length
   const canSubmit = charCount >= MIN_CHARS
+
+  async function handleAskRevision() {
+    if (!task || charCount < 20) return
+    setRevising(true)
+    setRevisionTip(null)
+    try {
+      const res = await fetch("/api/tasks/revise", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ task_id: task.id, content: answer }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message)
+      setRevisionTip(data.suggestion)
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Gagal mendapat saran")
+    } finally {
+      setRevising(false)
+    }
+  }
 
   async function handleSubmitTask() {
     if (!task || !canSubmit) return
@@ -171,9 +213,33 @@ export default function ModuleDetailClient({
 
       {/* Content */}
       <div
-        className="module-content text-neutral-700 leading-relaxed text-base mb-8"
+        className="module-content text-neutral-700 leading-relaxed text-base mb-4"
         dangerouslySetInnerHTML={{ __html: renderMarkdown(module.content_markdown) }}
       />
+
+      {/* AI summary */}
+      <div className="mb-8">
+        <button
+          type="button"
+          onClick={handleSummarize}
+          disabled={summarizing}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700 disabled:text-neutral-300 transition-colors"
+        >
+          {summarizing ? (
+            <><Loader2 size={12} className="animate-spin" /> Merangkum...</>
+          ) : (
+            <><Sparkles size={12} /> Rangkum modul ini dengan AI</>
+          )}
+        </button>
+        {summary && (
+          <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 mt-2">
+            <p className="text-xs font-semibold text-neutral-600 mb-1.5 flex items-center gap-1">
+              <Sparkles size={12} className="text-brand-500" /> Ringkasan AI
+            </p>
+            <p className="text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap">{summary}</p>
+          </div>
+        )}
+      </div>
 
       {/* Key Takeaway */}
       {module.key_takeaway && (
@@ -244,6 +310,29 @@ export default function ModuleDetailClient({
                 )}
               </Button>
             </div>
+
+            {/* Ask AI to help revise */}
+            <button
+              type="button"
+              onClick={handleAskRevision}
+              disabled={charCount < 20 || revising}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700 disabled:text-neutral-300 disabled:cursor-not-allowed transition-colors"
+            >
+              {revising ? (
+                <><Loader2 size={12} className="animate-spin" /> AI sedang menelaah...</>
+              ) : (
+                <><Sparkles size={12} /> Minta AI bantu perbaiki jawaban</>
+              )}
+            </button>
+
+            {revisionTip && (
+              <div className="bg-brand-50 border border-brand-100 rounded-lg p-3 mt-1">
+                <p className="text-xs font-semibold text-brand-700 mb-1 flex items-center gap-1">
+                  <Sparkles size={12} /> Saran Perbaikan dari AI Coach
+                </p>
+                <p className="text-xs text-brand-800 leading-relaxed whitespace-pre-wrap">{revisionTip}</p>
+              </div>
+            )}
           </div>
         </div>
       )}
