@@ -25,6 +25,7 @@ export type Database = {
           daily_time_minutes: number | null
           onboarding_completed: boolean
           is_admin: boolean
+          gemini_api_key_encrypted: string | null
           created_at: string
           updated_at: string
         }
@@ -39,6 +40,7 @@ export type Database = {
           daily_time_minutes?: number | null
           onboarding_completed?: boolean
           is_admin?: boolean
+          gemini_api_key_encrypted?: string | null
           created_at?: string
           updated_at?: string
         }

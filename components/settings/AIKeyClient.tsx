@@ -6,53 +6,64 @@ import { Loader2, Eye, EyeOff, Sparkles, Trash2, CheckCircle, ExternalLink } fro
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
-const STORAGE_KEY = "gemini_api_key"
-
 export default function AIKeyClient() {
   const [key, setKey] = useState("")
-  const [saved, setSaved] = useState(false)
+  const [hasKey, setHasKey] = useState(false)
   const [show, setShow] = useState(false)
-  const [testing, setTesting] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [removing, setRemoving] = useState(false)
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      setKey(stored)
-      setSaved(true)
-    }
+    fetch("/api/ai/key")
+      .then((r) => r.json())
+      .then((d) => setHasKey(!!d.has_key))
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
 
-  function handleSave() {
+  async function handleSave() {
     if (!key.trim()) return
-    localStorage.setItem(STORAGE_KEY, key.trim())
-    setSaved(true)
-    toast.success("API key tersimpan di browser ini")
-  }
-
-  function handleRemove() {
-    localStorage.removeItem(STORAGE_KEY)
-    setKey("")
-    setSaved(false)
-    toast.success("API key dihapus")
-  }
-
-  async function handleTest() {
-    if (!key.trim()) return
-    setTesting(true)
+    setSaving(true)
     try {
-      const res = await fetch("/api/ai/test", {
+      const res = await fetch("/api/ai/key", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ api_key: key.trim() }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message)
-      toast.success("API key valid & berfungsi! ✅")
+      setHasKey(true)
+      setKey("")
+      toast.success("API key tervalidasi & tersimpan ke akunmu ✅")
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Key tidak valid")
+      toast.error(e instanceof Error ? e.message : "Gagal menyimpan key")
     } finally {
-      setTesting(false)
+      setSaving(false)
     }
+  }
+
+  async function handleRemove() {
+    setRemoving(true)
+    try {
+      const res = await fetch("/api/ai/key", { method: "DELETE" })
+      if (!res.ok) throw new Error()
+      setHasKey(false)
+      setKey("")
+      toast.success("API key dihapus dari akunmu")
+    } catch {
+      toast.error("Gagal menghapus key")
+    } finally {
+      setRemoving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12 text-neutral-400">
+        <Loader2 size={22} className="animate-spin" />
+      </div>
+    )
   }
 
   return (
@@ -64,34 +75,47 @@ export default function AIKeyClient() {
           <div className="text-sm text-brand-800 space-y-1">
             <p className="font-semibold">Bring Your Own Key (BYOK)</p>
             <p className="text-xs text-brand-700 leading-relaxed">
-              Key kamu disimpan <strong>hanya di browser ini</strong> (localStorage) dan dikirim ke
-              server hanya saat menilai jawaban — tidak pernah disimpan di database kami. Model yang
-              dipakai: <strong>Gemini 2.5 Flash</strong>.
+              Setiap pengguna memakai API key Gemini miliknya sendiri. Key kamu disimpan{" "}
+              <strong>terenkripsi di akunmu</strong> dan ikut ke perangkat mana pun saat kamu login.
+              Model yang dipakai: <strong>Gemini 2.5 Flash</strong>.
             </p>
           </div>
         </div>
       </div>
 
+      {/* Current status */}
+      {hasKey && (
+        <div className="card-base p-4 border border-success-200 bg-success-50 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle size={18} className="text-success-600" />
+            <div>
+              <p className="text-sm font-semibold text-success-800">AI Coach aktif</p>
+              <p className="text-xs text-success-700">Key Gemini sudah tersimpan di akunmu.</p>
+            </div>
+          </div>
+          <Button
+            onClick={handleRemove}
+            disabled={removing}
+            variant="outline"
+            className="h-9 text-sm border-danger-200 text-danger-600 hover:bg-danger-50"
+          >
+            {removing ? <Loader2 size={14} className="animate-spin" /> : <><Trash2 size={14} /> Hapus</>}
+          </Button>
+        </div>
+      )}
+
       {/* Key input */}
       <div className="card-base p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-semibold text-neutral-700">API Key Gemini</label>
-          {saved && (
-            <span className="flex items-center gap-1 text-xs text-success-600 font-medium">
-              <CheckCircle size={12} /> Tersimpan
-            </span>
-          )}
-        </div>
+        <label className="text-sm font-semibold text-neutral-700">
+          {hasKey ? "Ganti API Key" : "Masukkan API Key Gemini"}
+        </label>
 
         <div className="relative">
           <Input
             type={show ? "text" : "password"}
             placeholder="AIza..."
             value={key}
-            onChange={(e) => {
-              setKey(e.target.value)
-              setSaved(false)
-            }}
+            onChange={(e) => setKey(e.target.value)}
             className="pr-10 font-mono text-sm"
           />
           <button
@@ -104,32 +128,20 @@ export default function AIKeyClient() {
           </button>
         </div>
 
-        <div className="flex gap-2">
-          <Button
-            onClick={handleSave}
-            disabled={!key.trim()}
-            className="bg-brand-500 hover:bg-brand-600 text-white h-9 text-sm"
-          >
-            Simpan Key
-          </Button>
-          <Button
-            onClick={handleTest}
-            disabled={!key.trim() || testing}
-            variant="outline"
-            className="h-9 text-sm"
-          >
-            {testing ? <><Loader2 size={14} className="animate-spin" /> Menguji...</> : "Test Key"}
-          </Button>
-          {saved && (
-            <Button
-              onClick={handleRemove}
-              variant="outline"
-              className="h-9 text-sm border-danger-200 text-danger-600 hover:bg-danger-50 ml-auto"
-            >
-              <Trash2 size={14} /> Hapus
-            </Button>
+        <Button
+          onClick={handleSave}
+          disabled={!key.trim() || saving}
+          className="bg-brand-500 hover:bg-brand-600 text-white h-9 text-sm"
+        >
+          {saving ? (
+            <><Loader2 size={14} className="animate-spin" /> Memvalidasi & menyimpan...</>
+          ) : (
+            "Validasi & Simpan Key"
           )}
-        </div>
+        </Button>
+        <p className="text-xs text-neutral-400">
+          Key akan diuji ke Gemini dulu sebelum disimpan, supaya kamu tahu langsung kalau salah.
+        </p>
       </div>
 
       {/* How to get key */}
@@ -149,7 +161,7 @@ export default function AIKeyClient() {
           </li>
           <li>Login dengan akun Google</li>
           <li>Klik &quot;Create API key&quot; → copy</li>
-          <li>Paste di kolom atas, klik &quot;Simpan Key&quot;</li>
+          <li>Paste di kolom atas, klik &quot;Validasi &amp; Simpan Key&quot;</li>
         </ol>
       </div>
     </div>

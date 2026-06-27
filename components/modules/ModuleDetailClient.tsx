@@ -65,12 +65,11 @@ export default function ModuleDetailClient({
   async function handleSubmitTask() {
     if (!task || !canSubmit) return
     setSubmitting(true)
-    const apiKey = typeof window !== "undefined" ? localStorage.getItem("gemini_api_key") : null
     try {
       const res = await fetch("/api/tasks/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ task_id: task.id, content: answer, api_key: apiKey || undefined }),
+        body: JSON.stringify({ task_id: task.id, content: answer }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message)
@@ -92,10 +91,8 @@ export default function ModuleDetailClient({
         toast.success(`Jawaban dinilai AI — skor ${data.score}/100 🤖`)
       } else if (data.ai_error) {
         toast.warning(`Jawaban disimpan, tapi AI feedback gagal: ${data.ai_error}`)
-      } else if (!apiKey) {
-        toast.success("Jawaban disimpan! (Aktifkan AI feedback di Pengaturan)")
       } else {
-        toast.success("Jawaban berhasil disimpan!")
+        toast.success("Jawaban disimpan! (Aktifkan AI Coach di menu untuk feedback otomatis)")
       }
     } catch {
       toast.error("Gagal menyimpan jawaban. Coba lagi.")

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { z } from "zod"
 import { generateTaskFeedback } from "@/lib/gemini"
+import { decrypt } from "@/lib/crypto"
 
 const schema = z.object({
   task_id: z.string().uuid(),
   content: z.string().min(50, "Minimal 50 karakter"),
-  api_key: z.string().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: parsed.error.issues[0].message }, { status: 400 })
   }
 
-  const { task_id, content, api_key } = parsed.data
+  const { task_id, content } = parsed.data
 
   // Verify task exists
   const { data: task } = await supabase
@@ -35,15 +36,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: `Minimal ${task.min_char_length} karakter` }, { status: 400 })
   }
 
-  // Optional AI feedback (BYOK — key passed from client, never stored)
+  // Optional AI feedback (BYOK — key stored encrypted per user, decrypted server-side)
   let aiFeedback: string | null = null
   let aiScore: number | null = null
   let aiError: string | null = null
 
-  if (api_key) {
+  const { data: keyRow } = await createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+    .from("users")
+    .select("gemini_api_key_encrypted")
+    .eq("id", user.id)
+    .single()
+
+  if (keyRow?.gemini_api_key_encrypted) {
     try {
+      const apiKey = decrypt(keyRow.gemini_api_key_encrypted)
       const result = await generateTaskFeedback({
-        apiKey: api_key,
+        apiKey,
         taskTitle: task.title,
         taskDescription: task.description,
         rubric: task.rubric,
