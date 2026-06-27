@@ -7,6 +7,7 @@ import { ChevronLeft, Bookmark, BookmarkCheck, CheckCircle, Loader2 } from "luci
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn, truncate } from "@/lib/utils"
+import { renderMarkdown } from "@/lib/markdown"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 
@@ -162,12 +163,10 @@ export default function ModuleDetailClient({
       </div>
 
       {/* Content */}
-      <div className="prose prose-neutral max-w-none mb-8">
-        <div
-          className="text-neutral-700 leading-relaxed text-base whitespace-pre-wrap"
-          dangerouslySetInnerHTML={{ __html: module.content_markdown }}
-        />
-      </div>
+      <div
+        className="module-content text-neutral-700 leading-relaxed text-base mb-8"
+        dangerouslySetInnerHTML={{ __html: renderMarkdown(module.content_markdown) }}
+      />
 
       {/* Key Takeaway */}
       {module.key_takeaway && (
