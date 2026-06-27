@@ -166,7 +166,7 @@ ALTER TABLE public.payment_proofs ENABLE ROW LEVEL SECURITY;
 
 -- Users: own row only
 CREATE POLICY "users_own" ON public.users
-  FOR ALL USING (auth.uid() = id);
+  FOR ALL USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 
 -- Modules: all authenticated users can read published
 CREATE POLICY "modules_read" ON public.modules
@@ -178,15 +178,15 @@ CREATE POLICY "tasks_read" ON public.tasks
 
 -- User progress: own rows only
 CREATE POLICY "progress_own" ON public.user_progress
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- Task submissions: own rows only
 CREATE POLICY "submissions_own" ON public.task_submissions
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- Daily logs: own rows only
 CREATE POLICY "daily_logs_own" ON public.daily_logs
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- Subscriptions: own rows only
 CREATE POLICY "subscriptions_own" ON public.subscriptions
@@ -194,11 +194,11 @@ CREATE POLICY "subscriptions_own" ON public.subscriptions
 
 -- Subscription orders: own rows only
 CREATE POLICY "orders_own" ON public.subscription_orders
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- Payment proofs: own rows only
 CREATE POLICY "proofs_own" ON public.payment_proofs
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- ============================================================
 -- TRIGGER: auto-create user profile on signup
