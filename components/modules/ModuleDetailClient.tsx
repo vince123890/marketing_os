@@ -65,11 +65,12 @@ export default function ModuleDetailClient({
   async function handleSubmitTask() {
     if (!task || !canSubmit) return
     setSubmitting(true)
+    const apiKey = typeof window !== "undefined" ? localStorage.getItem("gemini_api_key") : null
     try {
       const res = await fetch("/api/tasks/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ task_id: task.id, content: answer }),
+        body: JSON.stringify({ task_id: task.id, content: answer, api_key: apiKey || undefined }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message)
@@ -80,13 +81,22 @@ export default function ModuleDetailClient({
           id: data.submission_id,
           content: answer,
           submitted_at: new Date().toISOString(),
-          ai_feedback: null,
-          score: null,
+          ai_feedback: data.ai_feedback ?? null,
+          score: data.score ?? null,
         },
         ...localSubmissions,
       ])
       setAnswer("")
-      toast.success("Jawaban berhasil disimpan!")
+
+      if (data.score !== null && data.score !== undefined) {
+        toast.success(`Jawaban dinilai AI — skor ${data.score}/100 🤖`)
+      } else if (data.ai_error) {
+        toast.warning(`Jawaban disimpan, tapi AI feedback gagal: ${data.ai_error}`)
+      } else if (!apiKey) {
+        toast.success("Jawaban disimpan! (Aktifkan AI feedback di Pengaturan)")
+      } else {
+        toast.success("Jawaban berhasil disimpan!")
+      }
     } catch {
       toast.error("Gagal menyimpan jawaban. Coba lagi.")
     } finally {
@@ -259,6 +269,12 @@ export default function ModuleDetailClient({
                   )}
                 </div>
                 <p className="text-neutral-600 text-xs leading-relaxed">{truncate(sub.content, 200)}</p>
+                {sub.ai_feedback && (
+                  <div className="mt-2 pt-2 border-t border-neutral-100 flex gap-2">
+                    <span className="text-sm flex-shrink-0">🤖</span>
+                    <p className="text-xs text-brand-700 leading-relaxed">{sub.ai_feedback}</p>
+                  </div>
+                )}
               </div>
             ))}
           </div>

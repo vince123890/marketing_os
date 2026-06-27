@@ -12,6 +12,7 @@ import {
   LogOut,
   Flame,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
@@ -26,6 +27,7 @@ const navItems = [
   { href: "/modules", label: "Modul Belajar", icon: BookOpen },
   { href: "/daily-log", label: "Daily Log", icon: CalendarDays },
   { href: "/bookmarks", label: "Tersimpan", icon: Bookmark },
+  { href: "/settings/ai", label: "AI Coach", icon: Sparkles },
   { href: "/settings/subscription", label: "Langganan", icon: Settings },
 ]
 
