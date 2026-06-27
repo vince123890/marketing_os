@@ -17,7 +17,8 @@ export default async function BookmarksPage() {
       .eq("is_bookmarked", true),
   ])
 
-  const moduleIds = (progressRows ?? []).map((r) => r.module_id)
+  const rows = progressRows ?? []
+  const moduleIds = rows.map((r) => r.module_id)
 
   const { data: modules } = moduleIds.length
     ? await supabase
@@ -26,9 +27,9 @@ export default async function BookmarksPage() {
         .in("id", moduleIds)
         .eq("is_published", true)
         .order("order_number")
-    : { data: [] }
+    : { data: [] as { id: string; order_number: number; title: string; slug: string }[] }
 
-  const progressMap = new Map((progressRows ?? []).map((r) => [r.module_id, r]))
+  const progressMap = new Map(rows.map((r) => [r.module_id, r]))
   const currentPlan = profile?.current_plan ?? "free"
 
   const enriched = (modules ?? []).map((m) => {
