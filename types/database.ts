@@ -10,7 +10,7 @@ export type OrderStatus =
   | "expired"
 export type ProofStatus = "pending_verification" | "verified" | "rejected"
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       users: {
@@ -42,7 +42,21 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
-        Update: Partial<Database["public"]["Tables"]["users"]["Insert"]>
+        Update: {
+          id?: string
+          name?: string
+          email?: string
+          current_plan?: SubscriptionPlan
+          streak_count?: number
+          last_active_date?: string | null
+          learning_goal?: string | null
+          daily_time_minutes?: number | null
+          onboarding_completed?: boolean
+          is_admin?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       modules: {
         Row: {
@@ -67,7 +81,18 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
-        Update: Partial<Database["public"]["Tables"]["modules"]["Insert"]>
+        Update: {
+          id?: string
+          order_number?: number
+          slug?: string
+          title?: string
+          content_markdown?: string
+          key_takeaway?: string
+          is_published?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       tasks: {
         Row: {
@@ -88,7 +113,24 @@ export interface Database {
           min_char_length?: number
           created_at?: string
         }
-        Update: Partial<Database["public"]["Tables"]["tasks"]["Insert"]>
+        Update: {
+          id?: string
+          module_id?: string
+          title?: string
+          description?: string
+          rubric?: string
+          min_char_length?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_progress: {
         Row: {
@@ -109,7 +151,24 @@ export interface Database {
           started_at?: string | null
           completed_at?: string | null
         }
-        Update: Partial<Database["public"]["Tables"]["user_progress"]["Insert"]>
+        Update: {
+          id?: string
+          user_id?: string
+          module_id?: string
+          status?: ModuleStatus
+          is_bookmarked?: boolean
+          started_at?: string | null
+          completed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_progress_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       task_submissions: {
         Row: {
@@ -132,7 +191,17 @@ export interface Database {
           score?: number | null
           submitted_at?: string
         }
-        Update: Partial<Database["public"]["Tables"]["task_submissions"]["Insert"]>
+        Update: {
+          id?: string
+          user_id?: string
+          task_id?: string
+          module_id?: string
+          content?: string
+          ai_feedback?: string | null
+          score?: number | null
+          submitted_at?: string
+        }
+        Relationships: []
       }
       daily_logs: {
         Row: {
@@ -151,7 +220,15 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
-        Update: Partial<Database["public"]["Tables"]["daily_logs"]["Insert"]>
+        Update: {
+          id?: string
+          user_id?: string
+          log_date?: string
+          content?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       subscriptions: {
         Row: {
@@ -172,7 +249,16 @@ export interface Database {
           is_active?: boolean
           created_at?: string
         }
-        Update: Partial<Database["public"]["Tables"]["subscriptions"]["Insert"]>
+        Update: {
+          id?: string
+          user_id?: string
+          plan?: string
+          period_start?: string
+          period_end?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: []
       }
       subscription_orders: {
         Row: {
@@ -199,7 +285,19 @@ export interface Database {
           paid_at?: string | null
           created_at?: string
         }
-        Update: Partial<Database["public"]["Tables"]["subscription_orders"]["Insert"]>
+        Update: {
+          id?: string
+          user_id?: string
+          plan?: string
+          amount?: number
+          status?: OrderStatus
+          bank_name?: string
+          bank_account?: string
+          expires_at?: string
+          paid_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
       }
       payment_proofs: {
         Row: {
@@ -224,11 +322,39 @@ export interface Database {
           reviewed_at?: string | null
           reviewed_by?: string | null
         }
-        Update: Partial<Database["public"]["Tables"]["payment_proofs"]["Insert"]>
+        Update: {
+          id?: string
+          order_id?: string
+          user_id?: string
+          storage_path?: string
+          status?: ProofStatus
+          rejection_reason?: string | null
+          uploaded_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_proofs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
-    Views: Record<string, never>
-    Functions: Record<string, never>
-    Enums: Record<string, never>
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -20,7 +20,7 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const nextPath = searchParams.get("next") || "/dashboard"
@@ -130,5 +130,13 @@ export default function LoginPage() {
         </Link>
       </p>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="card-base p-8 shadow-lg rounded-2xl text-center text-neutral-400">Memuat...</div>}>
+      <LoginForm />
+    </Suspense>
   )
 }

@@ -17,7 +17,7 @@ export default async function BookmarksPage() {
       .eq("is_bookmarked", true),
   ])
 
-  const rows = (progressRows ?? []) as { module_id: string; status: string; is_bookmarked: boolean }[]
+  const rows = progressRows ?? []
   const moduleIds = rows.map((r) => r.module_id)
 
   const { data: modules } = moduleIds.length
