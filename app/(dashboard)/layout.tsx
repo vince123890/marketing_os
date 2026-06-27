@@ -10,7 +10,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!user) redirect("/login")
 
   const [{ data: profile }, { data: progressRows }] = await Promise.all([
-    supabase.from("users").select("name, email, streak_count, current_plan").eq("id", user.id).single(),
+    supabase.from("users").select("name, email, streak_count, current_plan, is_admin").eq("id", user.id).single(),
     supabase.from("user_progress").select("status").eq("user_id", user.id).eq("status", "completed"),
   ])
 
@@ -25,6 +25,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           email: profile?.email ?? user.email ?? "",
           streak_count: profile?.streak_count ?? 0,
           current_plan: profile?.current_plan ?? "free",
+          is_admin: profile?.is_admin ?? false,
         }}
         progress={{ completed, percentage }}
       />

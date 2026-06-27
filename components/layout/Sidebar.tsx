@@ -11,12 +11,13 @@ import {
   Settings,
   LogOut,
   Flame,
+  ShieldCheck,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 
 interface SidebarProps {
-  user: { name: string; email: string; streak_count: number; current_plan: string }
+  user: { name: string; email: string; streak_count: number; current_plan: string; is_admin?: boolean }
   progress: { completed: number; percentage: number }
 }
 
@@ -79,6 +80,24 @@ export default function Sidebar({ user, progress }: SidebarProps) {
             </Link>
           )
         })}
+
+        {user.is_admin && (
+          <Link
+            href="/admin"
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+              pathname === "/admin" || pathname.startsWith("/admin/")
+                ? "bg-brand-50 text-brand-700"
+                : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-800"
+            )}
+          >
+            <ShieldCheck
+              size={18}
+              className={pathname.startsWith("/admin") ? "text-brand-600" : "text-neutral-400"}
+            />
+            Admin
+          </Link>
+        )}
       </nav>
 
       {/* User card */}
